@@ -1,6 +1,5 @@
 #!/bin/bash
 
-#Перевірка передачі файла
 if [ "$#" -ne 1 ]; then
   echo "Using: $0 test_log.txt"
   exit 1
@@ -13,7 +12,7 @@ if [ ! -f "$LOG_FILE" ]; then
     exit 1
 fi
 
-#Завантаження weak_psswd_list.txt
+#Downloading weak_psswd_list.txt
 BLACKLIST=()
 while IFS= read -r line; do
     [[ -z "$line" || "$line" =~ ^[[:space:]]*$ ]] && continue
@@ -26,7 +25,7 @@ STOPPED_SERVICES=$(grep -c "Finished Remove" "$LOG_FILE")
 echo "Services started: $STARTED_SERVICES"
 echo "Services stopped: $STOPPED_SERVICES"
 
-#Пошук паролів у файлі
+#Searching for passwords in file
 echo -e "\nPassword complexity check..."
 PASSWORDS=$(grep -oE "admin_pass.*value=['\"][^'\"]+" "$LOG_FILE" | sed -E "s/.*value=['\"]([^'\"]+).*/\1/")
 
@@ -35,23 +34,23 @@ if [ -z "$PASSWORDS" ]; then
     exit 0
 fi
 
-#Перевірка складності пароля
+#Checking password complexity
 check_password_complexity() {
     local password="$1"
     local forbidden_hits=()
     local problems=()
     local output=()
 
-    #Перевірка довжини
+    #Checking length
     [ ${#password} -lt 12 ] && problems+=("less than 12 symbols")
 
-    #Перевірка символів
+    #Checking for symbols
     [[ "$password" =~ [a-z] ]] || problems+=("no lowercase letters")
     [[ "$password" =~ [A-Z] ]] || problems+=("no uppercase letters")
     [[ "$password" =~ [0-9] ]] || problems+=("no digits")
     [[ "$password" =~ [[:punct:]] ]] || problems+=("no special characters")
 
-    #Перевірка по weak_psswd_list.txt
+    #Checking for common words from weak_psswd_list.txt
     local lower_pass
     lower_pass=$(echo "$password" | tr '[:upper:]' '[:lower:]')
     for word in "${BLACKLIST[@]}"; do
@@ -63,7 +62,7 @@ check_password_complexity() {
         fi
     done
 
-    #Вивід
+    #Output
     if [ ${#forbidden_hits[@]} -eq 0 ] && [ ${#problems[@]} -eq 0 ]; then
         echo -e "$password \033[32m is Strong \033[0m"
     else
